@@ -2,9 +2,9 @@ from fastapi import APIRouter, Form, Depends, Path, Query
 from typing import Annotated
 from sqlalchemy.orm import Session
 
-from app.service_database import get_db
-from app.model import ExpenseModel
-from app.schemas import ExpenseBase
+from backend.app.service_database import get_db
+from backend.app.routers.expense.model import ExpenseModel
+from backend.app.schemas import ExpenseBase
 
 router = APIRouter()
 
@@ -28,3 +28,11 @@ async def delete_expense(id: Annotated[int, Path(title="The ID of the expense to
         return {"message": f"Expense {id} was deleted"}
     except Exception as e:
         return {"message": f"Error occurred"}
+    
+@router.get("/find_expense")
+async def find_expenses(name: str, session: SessionDep):
+    try:
+        expenses = session.query(ExpenseModel).filter(ExpenseModel.name == name).all()
+        return {"message": "Found the following items", "data": expenses}
+    except Exception as e:
+        return {"message": "Error retrieving expense"}

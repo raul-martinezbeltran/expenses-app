@@ -1,4 +1,4 @@
-from database import engine, inspect
+from backend.app.database import engine, inspect
 
 try:
     with engine.connect() as connection:
