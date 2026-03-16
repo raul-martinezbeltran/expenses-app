@@ -5,4 +5,3 @@ from typing import Optional
 class ExpenseBase(BaseModel):
     name: str
     amount: float
-    created_at: dt
