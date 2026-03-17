@@ -36,3 +36,16 @@ async def find_expenses(name: str, session: SessionDep):
         return {"message": "Found the following items", "data": expenses}
     except Exception as e:
         return {"message": "Error retrieving expense"}
+    
+@router.put("/update_expense")
+async def update_expense(expense: ExpenseBase, session: SessionDep):
+    try:
+        session.query(ExpenseModel).filter(ExpenseModel.id == expense.id).update({
+            "name": expense.name,
+            "amount": expense.amount
+        })
+        session.commit()
+
+        return {"message": f"Updated expense ID {expense.id}"}
+    except Exception as e:
+        return {"message": "Could not update expense"}
