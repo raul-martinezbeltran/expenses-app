@@ -6,7 +6,7 @@ from backend.app.service_database import get_db
 from backend.app.routers.expense.model import ExpenseModel
 from backend.app.schemas import ExpenseBase
 
-router = APIRouter()
+router = APIRouter(tags=["Expenses"])
 
 SessionDep = Annotated[Session, Depends(get_db)]
 

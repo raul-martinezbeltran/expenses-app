@@ -8,18 +8,19 @@ class ExpenseBase(BaseModel):
     amount: float
 
 ### Tokens
-class Token(BaseModel):
+class TokenBase(BaseModel):
     access_token: str
     token_type: str
 
-class TokenData(BaseModel):
+class TokenDataBase(BaseModel):
     username: str | None = None
 
-class User(BaseModel):
+class UserBase(BaseModel):
+    id: int | None = None
     username: str
     email: str | None = None
     full_name: str | None = None
     disabled: bool | None = None
 
-class UserInDB(User):
+class UserInDBBase(UserBase):
     hashed_password: str
