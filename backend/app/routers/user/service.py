@@ -35,11 +35,11 @@ router = APIRouter(tags=["Users"])
 SessionDep = Annotated[Session, Depends(get_db)]
 
 
-def verify_password(plain_password: str, hashed_password: str):
+def verify_password(plain_password: str, hashed_password: str) -> bool:
     return password_hash.verify(plain_password, hashed_password)
 
 
-def get_password_hash(password: str):
+def get_password_hash(password: str) -> str:
     return password_hash.hash(password)
 
 
@@ -66,19 +66,21 @@ def get_user(username: str, session: SessionDep) -> UserInDBBase | None:
         return {"message": f"Error occurred {e}"}
 
 
-def authenticate_user(username: str, password: str, session: SessionDep):
-    user_model = get_user(username, session)
+def authenticate_user(username: str, password: str, session: SessionDep) -> UserBase:
+    user_base = get_user(username, session)
 
-    if not user_model:
+    if not user_base:
         verify_password(password, DUMMY_HASH)
         return False
-    if not verify_password(password, user_model.hashed_password):
+    if not verify_password(password, user_base.hashed_password):
         return False
 
-    return user_model
+    return user_base
 
 
-def create_access_token(data: dict, expires_delta: Annotated[timedelta, None] = None):
+def create_access_token(
+    data: dict, expires_delta: Annotated[timedelta, None] = None
+) -> str:
     to_encode = data.copy()
 
     if expires_delta:
@@ -94,7 +96,7 @@ def create_access_token(data: dict, expires_delta: Annotated[timedelta, None] = 
 
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)], session: SessionDep
-):
+) -> UserBase:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -116,12 +118,13 @@ async def get_current_user(
 
     if user is None:
         raise credentials_exception
+
     return user
 
 
 async def get_current_active_user(
     current_user: Annotated[UserBase, Depends(get_current_user)],
-):
+) -> UserBase:
     if current_user.disabled:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
@@ -130,7 +133,7 @@ async def get_current_active_user(
 
 
 @router.post("/signup")
-async def signup_user(user_in: UserCreateBase, session: SessionDep):
+async def signup_user(user_in: UserCreateBase, session: SessionDep) -> dict:
     try:
         user_model = (
             session.query(UserModel)
@@ -201,6 +204,6 @@ async def read_users_me(
 @router.get("/users/me/items/")
 async def read_own_items(
     current_user: Annotated[UserBase, Depends(get_current_active_user)],
-):
+) -> dict:
 
     return [{"owner": current_user.username}]

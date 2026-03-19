@@ -7,6 +7,7 @@ class ExpenseBase(BaseModel):
     expense_id: int | None = None
     name: str
     amount: float
+    user_id: str
 
 
 ### Tokens

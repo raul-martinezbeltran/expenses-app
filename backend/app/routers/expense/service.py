@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from backend.app.service_database import get_db
 from backend.app.routers.expense.model import ExpenseModel
 from backend.app.schemas import ExpenseBase
+from backend.app.schemas import UserBase
 
 from backend.app.routers.user.service import get_current_active_user
 
@@ -14,7 +15,11 @@ SessionDep = Annotated[Session, Depends(get_db)]
 
 
 @router.post("/create_expense")
-async def create_expense(expense: Annotated[ExpenseBase, Form()], session: SessionDep):
+async def create_expense(
+    expense: Annotated[ExpenseBase, Form()],
+    session: SessionDep,
+    current_user: Annotated[UserBase, Depends(get_current_active_user)],
+):
     try:
         expense_model = ExpenseModel(name=expense.name, amount=expense.amount)
         session.add(expense_model)
