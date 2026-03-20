@@ -11,13 +11,14 @@ on:
     paths:
       - "backend/**"
       - ".github/workflows/backend-tests.yml"
+  workflow_dispatch:
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
     env:
-      PYTHONPATH: .
+      PYTHONPATH: ${{ github.workspace }}
       SECRET_KEY: test-secret-key
       DB_USERNAME: root
       DB_PASSWORD: root
@@ -57,6 +58,7 @@ jobs:
           pip install pytest pytest-asyncio httpx anyio mysql-connector-python
 
       - name: Wait for MySQL
+        working-directory: ./backend
         run: |
           python - <<'PY'
           import os
@@ -82,17 +84,26 @@ jobs:
           PY
 
       - name: Create test tables
+        working-directory: ./backend
         run: |
           python - <<'PY'
+          import os
+          from sqlalchemy import create_engine
           from backend.app.database import Base
-          from backend.conftest import engine
-
           from backend.app.routers.user.model import UserModel
           from backend.app.routers.expense.model import ExpenseModel
 
+          test_database_url = (
+              f"mysql+mysqlconnector://{os.getenv('DB_USERNAME')}:"
+              f"{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST')}/"
+              f"{os.getenv('TEST_DB_NAME')}"
+          )
+
+          engine = create_engine(test_database_url)
           Base.metadata.create_all(bind=engine)
           print("Test tables created")
           PY
 
       - name: Run tests
-        run: pytest -v backend/tests
+        working-directory: ./backend
+        run: pytest -v tests
