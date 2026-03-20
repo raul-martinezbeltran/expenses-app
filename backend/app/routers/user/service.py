@@ -1,14 +1,15 @@
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
+import os
 
 import jwt
-from fastapi import APIRouter, Depends, HTTPException, status
-from pwdlib import PasswordHash
+from dotenv import load_dotenv
+from fastapi import APIRouter, Depends, HTTPException, status, Form
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jwt.exceptions import InvalidTokenError
-from dotenv import load_dotenv
+from pwdlib import PasswordHash
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import NoResultFound
+
 from backend.app.service_database import get_db
 from backend.app.routers.user.model import UserModel
 from backend.app.schemas import (
@@ -18,7 +19,6 @@ from backend.app.schemas import (
     TokenBase,
     UserCreateBase,
 )
-import os
 
 load_dotenv()
 
@@ -30,7 +30,7 @@ password_hash = PasswordHash.recommended()
 DUMMY_HASH = password_hash.hash("dummypassword")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-router = APIRouter(tags=["Users"])
+router = APIRouter()
 
 SessionDep = Annotated[Session, Depends(get_db)]
 
@@ -44,34 +44,32 @@ def get_password_hash(password: str) -> str:
 
 
 def get_user(username: str, session: SessionDep) -> UserInDBBase | None:
-    try:
-        user_model = (
-            session.query(UserModel)
-            .filter(UserModel.username == username)
-            .one_or_none()
-        )
-        if user_model:
-            user_base = UserInDBBase(
-                id=user_model.user_id,
-                username=user_model.username,
-                email=user_model.email,
-                full_name=user_model.full_name,
-                disabled=user_model.disabled,
-                hashed_password=user_model.hashed_password,
-            )
+    user_model = (
+        session.query(UserModel).filter(UserModel.username == username).one_or_none()
+    )
 
-            return user_base
+    if user_model is None:
         return None
-    except Exception as e:
-        return {"message": f"Error occurred {e}"}
+
+    return UserInDBBase(
+        user_id=user_model.user_id,
+        username=user_model.username,
+        email=user_model.email,
+        full_name=user_model.full_name,
+        disabled=user_model.disabled,
+        hashed_password=user_model.hashed_password,
+    )
 
 
-def authenticate_user(username: str, password: str, session: SessionDep) -> UserBase:
+def authenticate_user(
+    username: str, password: str, session: SessionDep
+) -> UserInDBBase | bool:
     user_base = get_user(username, session)
 
     if not user_base:
         verify_password(password, DUMMY_HASH)
         return False
+
     if not verify_password(password, user_base.hashed_password):
         return False
 
@@ -119,7 +117,13 @@ async def get_current_user(
     if user is None:
         raise credentials_exception
 
-    return user
+    return UserBase(
+        user_id=user.user_id,
+        username=user.username,
+        email=user.email,
+        full_name=user.full_name,
+        disabled=user.disabled,
+    )
 
 
 async def get_current_active_user(
@@ -127,31 +131,34 @@ async def get_current_active_user(
 ) -> UserBase:
     if current_user.disabled:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Inactive user",
         )
     return current_user
 
 
-@router.post("/signup")
-async def signup_user(user_in: UserCreateBase, session: SessionDep) -> dict:
+@router.post("/signup", tags=["users"])
+async def signup_user(
+    user_in: Annotated[UserCreateBase, Form()], session: SessionDep
+) -> dict:
     try:
-        user_model = (
+        existing_email = (
             session.query(UserModel)
             .filter(UserModel.email == user_in.email)
             .one_or_none()
         )
-        if user_model:
+        if existing_email:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Email already registered",
             )
 
-        user_model = (
+        existing_username = (
             session.query(UserModel)
             .filter(UserModel.username == user_in.username)
             .one_or_none()
         )
-        if user_model:
+        if existing_username:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Username already registered",
@@ -168,17 +175,28 @@ async def signup_user(user_in: UserCreateBase, session: SessionDep) -> dict:
 
         session.add(user_model)
         session.commit()
+        session.refresh(user_model)
+
         return {"message": f"User {user_in.username} created"}
-    except Exception as e:
-        return {"message": f"Error ocurred {e}"}
+    except HTTPException:
+        raise
+    except Exception:
+        session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Error creating user",
+        )
 
 
-@router.post("/token")
+@router.post("/token", tags=["users"])
 async def login_for_access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()], session: SessionDep
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    session: SessionDep,
 ) -> TokenBase:
     user = authenticate_user(
-        username=form_data.username, password=form_data.password, session=session
+        username=form_data.username,
+        password=form_data.password,
+        session=session,
     )
     if not user:
         raise HTTPException(
@@ -186,24 +204,25 @@ async def login_for_access_token(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
+        data={"sub": user.username},
+        expires_delta=access_token_expires,
     )
 
     return TokenBase(access_token=access_token, token_type="bearer")
 
 
-@router.get("/users/me")
+@router.get("/users/me/", tags=["users"])
 async def read_users_me(
     current_user: Annotated[UserBase, Depends(get_current_active_user)],
 ) -> UserBase:
     return current_user
 
 
-@router.get("/users/me/items/")
+@router.get("/users/me/items/", tags=["users"])
 async def read_own_items(
     current_user: Annotated[UserBase, Depends(get_current_active_user)],
 ) -> dict:
-
-    return [{"owner": current_user.username}]
+    return {"owner": current_user.username}

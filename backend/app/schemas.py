@@ -1,13 +1,23 @@
 from pydantic import BaseModel
-import datetime as dt
 
 
 ### Expenses
-class ExpenseBase(BaseModel):
-    expense_id: int | None = None
+class ExpenseCreateBase(BaseModel):
     name: str
     amount: float
-    user_id: str
+
+
+class ExpenseUpdateBase(BaseModel):
+    expense_id: int
+    name: str
+    amount: float
+
+
+class ExpenseResponseBase(BaseModel):
+    expense_id: int
+    name: str
+    amount: float
+    user_id: int
 
 
 ### Tokens
@@ -21,8 +31,6 @@ class TokenDataBase(BaseModel):
 
 
 ### Users
-
-
 class UserBase(BaseModel):
     user_id: int | None = None
     username: str

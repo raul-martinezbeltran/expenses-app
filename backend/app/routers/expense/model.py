@@ -1,5 +1,6 @@
-from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped
 import datetime as dt
+
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 class Base(DeclarativeBase):
@@ -13,6 +14,7 @@ class ExpenseModel(Base):
     name: Mapped[str] = mapped_column(nullable=False)
     amount: Mapped[float] = mapped_column(nullable=False)
     created_at: Mapped[dt.datetime] = mapped_column(
-        nullable=True, default=dt.datetime.now(dt.timezone.utc)
+        nullable=True,
+        default=lambda: dt.datetime.now(dt.timezone.utc),
     )
     user_id: Mapped[int] = mapped_column(nullable=False)
