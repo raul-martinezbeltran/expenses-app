@@ -3,7 +3,7 @@ import logging.config
 import yaml
 
 with open(
-    "log_config.yaml",
+    "./log_config.yaml",
     "r",
 ) as f:
     log_config = yaml.safe_load(f)
