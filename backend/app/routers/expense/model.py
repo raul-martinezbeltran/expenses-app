@@ -1,10 +1,7 @@
 import datetime as dt
 
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-
-
-class Base(DeclarativeBase):
-    pass
+from backend.app.database import Base
 
 
 class ExpenseModel(Base):

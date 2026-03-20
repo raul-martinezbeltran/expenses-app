@@ -34,6 +34,7 @@ def reset_tables():
     with engine.begin() as connection:
         connection.execute(text("DELETE FROM expenses"))
         connection.execute(text("DELETE FROM users"))
+    yield
 
 
 @pytest.fixture

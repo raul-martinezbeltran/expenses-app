@@ -1,0 +1,98 @@
+name: Backend Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-tests.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-tests.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    env:
+      PYTHONPATH: .
+      SECRET_KEY: test-secret-key
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      DB_HOST: 127.0.0.1
+      TEST_DB_NAME: test_db
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: test_db
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio httpx anyio mysql-connector-python
+
+      - name: Wait for MySQL
+        run: |
+          python - <<'PY'
+          import os
+          import time
+          import mysql.connector
+
+          for i in range(60):
+              try:
+                  conn = mysql.connector.connect(
+                      host=os.environ["DB_HOST"],
+                      user=os.environ["DB_USERNAME"],
+                      password=os.environ["DB_PASSWORD"],
+                      database=os.environ["TEST_DB_NAME"],
+                  )
+                  conn.close()
+                  print("MySQL is ready")
+                  break
+              except Exception as e:
+                  print(f"Waiting for MySQL... ({i+1}/60) {e}")
+                  time.sleep(2)
+          else:
+              raise SystemExit("MySQL did not become ready in time")
+          PY
+
+      - name: Create test tables
+        run: |
+          python - <<'PY'
+          from backend.app.database import Base
+          from backend.conftest import engine
+
+          from backend.app.routers.user.model import UserModel
+          from backend.app.routers.expense.model import ExpenseModel
+
+          Base.metadata.create_all(bind=engine)
+          print("Test tables created")
+          PY
+
+      - name: Run tests
+        run: pytest -v backend/tests

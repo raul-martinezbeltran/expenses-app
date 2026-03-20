@@ -1,8 +1,5 @@
 from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped
-
-
-class Base(DeclarativeBase):
-    pass
+from backend.app.database import Base
 
 
 class UserModel(Base):
