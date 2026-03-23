@@ -30,7 +30,7 @@ password_hash = PasswordHash.recommended()
 DUMMY_HASH = password_hash.hash("dummypassword")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/users/token")
 
-router = APIRouter()
+router = APIRouter(prefix="/api/v1/users")
 
 SessionDep = Annotated[Session, Depends(get_db)]
 

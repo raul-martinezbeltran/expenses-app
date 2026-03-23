@@ -8,7 +8,10 @@ from sqlalchemy.orm import sessionmaker
 
 from backend.main import app
 from backend.app.service_database import get_db
-from backend.app.routers.user.service import get_current_active_user
+from backend.app.routers.user.service import (
+    get_current_active_user,
+    get_password_hash,
+)
 from backend.app.schemas import UserBase
 from backend.app.routers.user.model import UserModel
 
@@ -27,6 +30,11 @@ TestingSessionLocal = sessionmaker(
     autoflush=False,
     bind=engine,
 )
+
+
+@pytest.fixture
+def anyio_backend():
+    return "asyncio"
 
 
 @pytest.fixture(autouse=True)
@@ -69,7 +77,7 @@ def test_user(db_session):
         email="test@example.com",
         full_name="Test User",
         disabled=False,
-        hashed_password="not_used_in_this_test",
+        hashed_password=get_password_hash("password123"),
     )
 
     db_session.add(user)
@@ -86,7 +94,24 @@ def other_user(db_session):
         email="other@example.com",
         full_name="Other User",
         disabled=False,
-        hashed_password="not_used_in_this_test",
+        hashed_password=get_password_hash("password123"),
+    )
+
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+
+    return user
+
+
+@pytest.fixture
+def inactive_user(db_session):
+    user = UserModel(
+        username="inactive_user",
+        email="inactive@example.com",
+        full_name="Inactive User",
+        disabled=True,
+        hashed_password=get_password_hash("password123"),
     )
 
     db_session.add(user)

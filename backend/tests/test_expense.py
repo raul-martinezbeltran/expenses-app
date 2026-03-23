@@ -11,7 +11,7 @@ TEST_EXPENSE_NAME = "test_expense_rollback_check"
 @pytest.mark.anyio
 async def test_create_item_success(auth_client: AsyncClient, db_session: Session):
     form_data = {"name": TEST_EXPENSE_NAME, "amount": "3.0"}
-    response = await auth_client.post("/create_expense", data=form_data)
+    response = await auth_client.post("/api/v1/expenses/create_expense", data=form_data)
 
     assert response.status_code == 200
     assert response.json() == {"message": f"Expense {form_data['name']} created"}
@@ -29,7 +29,7 @@ async def test_create_item_success(auth_client: AsyncClient, db_session: Session
 async def test_create_item_failure(auth_client: AsyncClient):
     form_data = {"name": TEST_EXPENSE_NAME}
 
-    response = await auth_client.post("/create_expense", data=form_data)
+    response = await auth_client.post("/api/v1/expenses/create_expense", data=form_data)
 
     assert response.status_code == 422
 
@@ -60,7 +60,9 @@ async def test_delete_expense_success(
     db_session.commit()
     db_session.refresh(expense)
 
-    response = await auth_client.delete(f"/delete_expense/{expense.expense_id}")
+    response = await auth_client.delete(
+        f"/api/v1/expenses/delete_expense/{expense.expense_id}"
+    )
 
     assert response.status_code == 200
     assert response.json() == {"message": f"Expense {expense.expense_id} was deleted"}
@@ -89,7 +91,7 @@ async def test_delete_expense_other_users_expense_returns_404(
     db_session.refresh(other_users_expense)
 
     response = await auth_client.delete(
-        f"/delete_expense/{other_users_expense.expense_id}"
+        f"/api/v1/expenses/delete_expense/{other_users_expense.expense_id}"
     )
 
     assert response.status_code == 404
@@ -105,7 +107,7 @@ async def test_delete_expense_other_users_expense_returns_404(
 
 @pytest.mark.anyio
 async def test_delete_expense_nonexistent_id_returns_404(auth_client: AsyncClient):
-    response = await auth_client.delete("/delete_expense/999999")
+    response = await auth_client.delete("/api/v1/expenses/delete_expense/999999")
 
     assert response.status_code == 404
     assert response.json() == {"detail": "Expense not found"}
@@ -138,7 +140,10 @@ async def test_find_expense_success(
     db_session.refresh(expense1)
     db_session.refresh(expense2)
 
-    response = await auth_client.get("/find_expense", params={"name": "groceries"})
+    response = await auth_client.get(
+        "/api/v1/expenses/find_expense",
+        params={"name": "groceries"},
+    )
 
     assert response.status_code == 200
     data = response.json()
@@ -170,7 +175,10 @@ async def test_find_expense_returns_only_current_users_expenses(
     db_session.commit()
     db_session.refresh(my_expense)
 
-    response = await auth_client.get("/find_expense", params={"name": "shared_name"})
+    response = await auth_client.get(
+        "/api/v1/expenses/find_expense",
+        params={"name": "shared_name"},
+    )
 
     assert response.status_code == 200
     data = response.json()
@@ -183,7 +191,10 @@ async def test_find_expense_returns_only_current_users_expenses(
 
 @pytest.mark.anyio
 async def test_find_expense_no_matches(auth_client: AsyncClient):
-    response = await auth_client.get("/find_expense", params={"name": "does_not_exist"})
+    response = await auth_client.get(
+        "/api/v1/expenses/find_expense",
+        params={"name": "does_not_exist"},
+    )
 
     assert response.status_code == 200
     data = response.json()
@@ -218,7 +229,7 @@ async def test_get_all_expenses_success(
     db_session.add_all([expense1, expense2, other_expense])
     db_session.commit()
 
-    response = await auth_client.get("/get_all_expenses")
+    response = await auth_client.get("/api/v1/expenses/get_all_expenses")
 
     assert response.status_code == 200
     data = response.json()
@@ -231,7 +242,7 @@ async def test_get_all_expenses_success(
 
 @pytest.mark.anyio
 async def test_get_all_expenses_empty(auth_client: AsyncClient, test_user):
-    response = await auth_client.get("/get_all_expenses")
+    response = await auth_client.get("/api/v1/expenses/get_all_expenses")
 
     assert response.status_code == 200
     data = response.json()
@@ -261,7 +272,10 @@ async def test_update_expense_success(
         "amount": 25.5,
     }
 
-    response = await auth_client.put("/update_expense", json=payload)
+    response = await auth_client.put(
+        "/api/v1/expenses/update_expense",
+        json=payload,
+    )
 
     assert response.status_code == 200
     assert response.json() == {"message": f"Updated expense ID {expense.expense_id}"}
@@ -297,7 +311,10 @@ async def test_update_expense_does_not_update_other_users_expense(
         "amount": 1.0,
     }
 
-    response = await auth_client.put("/update_expense", json=payload)
+    response = await auth_client.put(
+        "/api/v1/expenses/update_expense",
+        json=payload,
+    )
 
     assert response.status_code == 404
     assert response.json() == {"detail": "Expense not found"}
@@ -320,7 +337,10 @@ async def test_update_expense_nonexistent_id_returns_404(auth_client: AsyncClien
         "amount": 123.45,
     }
 
-    response = await auth_client.put("/update_expense", json=payload)
+    response = await auth_client.put(
+        "/api/v1/expenses/update_expense",
+        json=payload,
+    )
 
     assert response.status_code == 404
     assert response.json() == {"detail": "Expense not found"}

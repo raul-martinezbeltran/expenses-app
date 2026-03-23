@@ -22,5 +22,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(expense_router, prefix="/api/v1/expenses")
-app.include_router(user_router, prefix="/api/v1/users")
+app.include_router(expense_router)
+app.include_router(user_router)
