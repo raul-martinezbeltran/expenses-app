@@ -27,7 +27,7 @@ export default function Navbar() {
       <nav className="hidden md:fixed md:left-0 md:top-0 md:flex md:h-screen md:w-64 md:flex-col md:border-r md:border-gray-200 md:bg-white md:px-4 md:py-6">
         <div>
           <p className="px-4 text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
-            Navigation
+            PlaceHolder
           </p>
 
           <div className="mt-6 flex flex-col gap-2">
