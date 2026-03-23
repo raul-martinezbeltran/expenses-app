@@ -28,7 +28,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 
 password_hash = PasswordHash.recommended()
 DUMMY_HASH = password_hash.hash("dummypassword")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/users/token")
 
 router = APIRouter()
 
@@ -177,7 +177,16 @@ async def signup_user(
         session.commit()
         session.refresh(user_model)
 
-        return {"message": f"User {user_in.username} created"}
+        return {
+            "message": f"User {user_in.username} created",
+            "user": {
+                "user_id": user_model.user_id,
+                "username": user_model.username,
+                "email": user_model.email,
+                "full_name": user_model.full_name,
+                "disabled": user_model.disabled,
+            },
+        }
     except HTTPException:
         raise
     except Exception:
@@ -214,14 +223,14 @@ async def login_for_access_token(
     return TokenBase(access_token=access_token, token_type="bearer")
 
 
-@router.get("/users/me/", tags=["users"])
+@router.get("/me", tags=["users"])
 async def read_users_me(
     current_user: Annotated[UserBase, Depends(get_current_active_user)],
 ) -> UserBase:
     return current_user
 
 
-@router.get("/users/me/items/", tags=["users"])
+@router.get("/me/items", tags=["users"])
 async def read_own_items(
     current_user: Annotated[UserBase, Depends(get_current_active_user)],
 ) -> dict:

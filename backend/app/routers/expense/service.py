@@ -13,7 +13,7 @@ from backend.app.schemas import (
 )
 from backend.app.routers.user.service import get_current_active_user
 
-router = APIRouter()
+router = APIRouter(prefix="/api/v1/expenses")
 
 SessionDep = Annotated[Session, Depends(get_db)]
 CurrentUserDep = Annotated[UserBase, Depends(get_current_active_user)]

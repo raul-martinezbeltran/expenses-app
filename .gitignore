@@ -1,3 +1,56 @@
+# Python cache
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment variables
 .env
+.env.*
+!.env.example
+
+# Test / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# Type check / lint caches
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.pytype/
+
+# Build / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Logs
+*.log
+logs/
+
+# IDE / editor
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local uploads / generated files
+uploads/
+media/
+tmp/
+temp/
+
+# Node stuff if frontend tooling touches backend folder
+node_modules/
