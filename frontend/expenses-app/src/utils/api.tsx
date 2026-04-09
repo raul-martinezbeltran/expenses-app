@@ -14,6 +14,11 @@ export type SignupPayload = {
   password: string;
 };
 
+export type CreateExpensePayload = {
+  name: string;
+  amount: string;
+};
+
 export type UserResponse = {
   user_id: number;
   username: string;
@@ -99,4 +104,28 @@ export async function getCurrentUser(): Promise<UserResponse> {
   }
 
   return data as UserResponse;
+}
+
+export async function createExpense(payload: CreateExpensePayload) {
+  const formData = new FormData();
+  formData.append("name", payload.name);
+  formData.append("amount", payload.amount);
+
+  const response = await authFetch(`${API_BASE_URL}/expenses/create_expense`, {
+    method: "POST",
+    body: formData,
+  });
+
+  const data = await parseJsonSafe(response);
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      clearAuthTokens();
+    }
+    throw new Error(
+      data?.detail || data?.message || "Failed to create expense",
+    );
+  }
+
+  return data;
 }

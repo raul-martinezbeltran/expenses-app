@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { clearAuthTokens } from "../../utils/auth";
 
 const navItemStyle =
@@ -11,6 +11,13 @@ const logoutButtonStyle =
 export default function Navbar() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
 
   const handleLogout = () => {
     clearAuthTokens();
@@ -24,7 +31,7 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="hidden md:fixed md:left-0 md:top-0 md:flex md:h-screen md:w-64 md:flex-col md:border-r md:border-gray-200 md:bg-white md:px-4 md:py-6">
+      <nav className="hidden md:fixed md:left-0 md:top-0 md:z-40 md:flex md:h-screen md:w-64 md:flex-col md:border-r md:border-gray-200 md:bg-white md:px-4 md:py-6">
         <div>
           <p className="px-4 text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
             PlaceHolder
@@ -37,55 +44,52 @@ export default function Navbar() {
             <Link to="/expenses" className={navItemStyle}>
               Expenses
             </Link>
+            <Link to="/create_expense" className={navItemStyle}>
+              Create Expense
+            </Link>
           </div>
         </div>
 
         <div className="mt-auto pt-6">
-          <button onClick={handleLogout} className={logoutButtonStyle}>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className={logoutButtonStyle}
+          >
             Logout
           </button>
         </div>
       </nav>
 
-      <div className="sticky top-0 z-50 flex items-center justify-end border-b border-gray-200 bg-white px-4 py-4 md:hidden">
-        <button
-          type="button"
-          onClick={() => setOpen((prev) => !prev)}
-          className="inline-flex items-center rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-900"
-          aria-label="Toggle navigation menu"
-          aria-expanded={open}
-        >
-          <span className="relative flex h-5 w-5 items-center justify-center">
-            <span
-              className={`absolute block h-0.5 w-5 rounded-full bg-gray-700 transition-all duration-300 ease-out ${
-                open ? "rotate-45" : "-translate-y-1.5"
-              }`}
-            />
-            <span
-              className={`absolute block h-0.5 w-5 rounded-full bg-gray-700 transition-all duration-200 ease-out ${
-                open ? "opacity-0 scale-x-50" : "opacity-100"
-              }`}
-            />
-            <span
-              className={`absolute block h-0.5 w-5 rounded-full bg-gray-700 transition-all duration-300 ease-out ${
-                open ? "-rotate-45" : "translate-y-1.5"
-              }`}
-            />
-          </span>
-        </button>
-      </div>
+      {!open && (
+        <div className="sticky top-0 z-50 flex items-center justify-end border-b border-gray-200 bg-white px-4 py-4 md:hidden">
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="inline-flex items-center rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-900"
+            aria-label="Toggle navigation menu"
+            aria-expanded={open}
+          >
+            <span className="relative flex h-5 w-5 items-center justify-center">
+              <span className="absolute block h-0.5 w-5 -translate-y-1.5 rounded-full bg-gray-700 transition-all duration-300 ease-out" />
+              <span className="absolute block h-0.5 w-5 rounded-full bg-gray-700 transition-all duration-200 ease-out" />
+              <span className="absolute block h-0.5 w-5 translate-y-1.5 rounded-full bg-gray-700 transition-all duration-300 ease-out" />
+            </span>
+          </button>
+        </div>
+      )}
 
       <div
-        className={`fixed inset-0 z-40 md:hidden transition-all duration-300 ease-out ${
+        className={`fixed inset-0 z-[60] md:hidden transition-opacity duration-300 ease-out ${
           open
-            ? "visible bg-black/30 opacity-100"
-            : "invisible bg-black/0 opacity-0"
+            ? "pointer-events-auto bg-black/30 opacity-100"
+            : "pointer-events-none bg-black/0 opacity-0"
         }`}
         onClick={handleCloseMenu}
       >
         <div
-          className={`absolute left-0 top-0 flex h-screen w-72 flex-col border-r border-gray-200 bg-white px-4 py-6 shadow-lg transition-all duration-300 ease-out will-change-transform will-change-opacity ${
-            open ? "translate-x-0 opacity-100" : "-translate-x-1 opacity-0"
+          className={`absolute left-0 top-0 flex h-screen w-72 flex-col border-r border-gray-200 bg-white px-4 py-6 shadow-lg transition-transform duration-300 ease-out ${
+            open ? "translate-x-0" : "-translate-x-full"
           }`}
           onClick={(e) => e.stopPropagation()}
         >
@@ -111,10 +115,21 @@ export default function Navbar() {
             >
               Expenses
             </Link>
+            <Link
+              to="/create_expense"
+              className={navItemStyle}
+              onClick={handleCloseMenu}
+            >
+              Create Expense
+            </Link>
           </div>
 
           <div className="mt-auto pt-6">
-            <button onClick={handleLogout} className={logoutButtonStyle}>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className={logoutButtonStyle}
+            >
               Logout
             </button>
           </div>
